@@ -49,7 +49,7 @@
     .sticky-shadow {
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
     }
-    /* Best seller animation - pulse + shine */
+    /* Best seller animation - gentle pulse + soft shine (no slider transition, just continuous smooth auto-scroll) */
     @keyframes gentlePulse {
       0%, 100% { box-shadow: 0 0 0 0 rgba(193, 122, 91, 0.4); }
       50% { box-shadow: 0 0 0 6px rgba(193, 122, 91, 0.15); }
@@ -94,47 +94,37 @@
     .product-card:hover .product-img-container img {
       transform: scale(1.05);
     }
-    /* Slider animations */
-    @keyframes slideIn {
-      from { opacity: 0; transform: translateX(20px); }
-      to { opacity: 1; transform: translateX(0); }
+    /* Auto-scroll smooth marquee style - infinite smooth horizontal scroll */
+    .marquee-wrapper {
+      overflow-x: auto;
+      scroll-behavior: smooth;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+      cursor: grab;
+    }
+    .marquee-wrapper:active {
+      cursor: grabbing;
+    }
+    .marquee-track {
+      display: flex;
+      gap: 1rem;
+      width: max-content;
+      will-change: transform;
     }
     .slider-item {
-      animation: slideIn 0.4s ease-out;
+      flex-shrink: 0;
+      width: 160px;
     }
-    .slider-btn {
-      transition: all 0.2s ease;
-    }
-    .slider-btn:active {
-      transform: scale(0.9);
-    }
-    /* Ripple effect */
-    .ripple-effect {
+    /* smooth infinite auto-scroll via JS but with continuous linear animation */
+    .infinite-scroll-container {
       position: relative;
-      overflow: hidden;
-    }
-    .ripple-effect:active::after {
-      content: '';
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      width: 100%;
-      height: 100%;
-      background: radial-gradient(circle, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0) 80%);
-      transform: translate(-50%, -50%) scale(0);
-      animation: ripple 0.4s ease-out;
-      pointer-events: none;
-    }
-    @keyframes ripple {
-      to { transform: translate(-50%, -50%) scale(2); opacity: 0; }
-    }
-    /* Auto-scroll smooth */
-    .slider-container {
+      overflow-x: auto;
       scroll-behavior: smooth;
-      scroll-snap-type: x mandatory;
     }
-    .slider-container > * {
-      scroll-snap-align: start;
+    /* subtle fade edges for better UX */
+    .fade-edges {
+      mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+      -webkit-mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
     }
   </style>
 </head>
@@ -264,8 +254,8 @@
     let currentView = "home";
     let selectedCategory = "All";
     let orderHistory = [];
-    let currentSliderIndex = 0;
-    let autoSliderInterval = null;
+    let autoScrollInterval = null;    // for smooth auto-scroll animation
+    let bestSellerScrollActive = true;
     
     function renderCurrentView() {
       const container = document.getElementById("main-view");
@@ -293,35 +283,102 @@
       });
     }
     
-    // Best Seller Slider Component with auto-slide
-    function initBestSellerSlider() {
-      const slider = document.querySelector('.slider-container');
-      if (!slider) return;
+    // SMOOTH INFINITE AUTO-SCROLL FOR BEST SELLER (continuous and slow)
+    function startSmoothAutoScroll(containerElement) {
+      if (autoScrollInterval) clearInterval(autoScrollInterval);
+      if (!containerElement) return;
       
-      // Clear any existing interval
-      if (autoSliderInterval) clearInterval(autoSliderInterval);
+      // Make sure we have scrollable content
+      const scrollWidth = containerElement.scrollWidth;
+      const clientWidth = containerElement.clientWidth;
+      if (scrollWidth <= clientWidth) return;
       
-      // Auto slide every 4 seconds
-      autoSliderInterval = setInterval(() => {
-        const nextBtn = document.querySelector('.slider-next');
-        if (nextBtn && document.querySelector('.slider-container')) {
-          nextBtn.click();
+      let step = 0.8; // Pixels per frame (smooth & slow)
+      let animationFrameId = null;
+      let lastTimestamp = 0;
+      let direction = 1; // 1 = forward, -1 = backward (for seamless loop)
+      
+      // We'll implement a smooth step-based animation that loops seamlessly
+      function scrollStep() {
+        if (!containerElement || !bestSellerScrollActive || currentView !== "home") {
+          if (animationFrameId) cancelAnimationFrame(animationFrameId);
+          return;
         }
-      }, 4000);
+        
+        let newScrollLeft = containerElement.scrollLeft + step;
+        const maxScroll = containerElement.scrollWidth - containerElement.clientWidth;
+        
+        // Seamless loop: if we reach near end, reset to 0 without jump (or reverse smoothly)
+        if (newScrollLeft >= maxScroll - 2) {
+          // Instead of abrupt jump, we reset instantly but visually we can wrap content clone? but simpler:
+          // Reset to 0 instantly — but because of smooth motion, slight jump might happen.
+          // For buttery smooth infinite we can duplicate items? But easiest: wrap smoothly by resetting without user noticing.
+          // We'll reset with a very tiny frame that's almost invisible because we set to 0 and continue.
+          containerElement.scrollLeft = 0;
+          newScrollLeft = step;
+        }
+        
+        containerElement.scrollLeft = newScrollLeft;
+        animationFrameId = requestAnimationFrame(scrollStep);
+      }
+      
+      // Start animation
+      bestSellerScrollActive = true;
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      animationFrameId = requestAnimationFrame(scrollStep);
+      
+      // Store the frame id for cleanup
+      autoScrollInterval = { type: 'frame', id: animationFrameId, frameFn: scrollStep };
+      // Also attach to container for cleanup
+      containerElement._autoFrameId = animationFrameId;
     }
     
-    function slideBestSeller(direction) {
-      const slider = document.querySelector('.slider-container');
-      if (!slider) return;
-      const scrollAmount = slider.clientWidth;
-      if (direction === 'next') {
-        slider.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-      } else {
-        slider.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+    function stopSmoothAutoScroll() {
+      bestSellerScrollActive = false;
+      if (autoScrollInterval) {
+        if (autoScrollInterval.id) {
+          cancelAnimationFrame(autoScrollInterval.id);
+        }
+        autoScrollInterval = null;
       }
     }
     
-    // Home with Best Seller Slider Section
+    // Manual control for best-seller section while preserving smooth scroll after a while
+    function setupBestSellerInteractions(wrapper) {
+      if (!wrapper) return;
+      let timeoutId = null;
+      
+      const pauseAutoScroll = () => {
+        if (autoScrollInterval && autoScrollInterval.id) {
+          cancelAnimationFrame(autoScrollInterval.id);
+          autoScrollInterval = null;
+        }
+        if (timeoutId) clearTimeout(timeoutId);
+        // Resume auto scroll after 4 seconds of inactivity
+        timeoutId = setTimeout(() => {
+          if (currentView === "home" && wrapper && document.body.contains(wrapper)) {
+            startSmoothAutoScroll(wrapper);
+          }
+        }, 4000);
+      };
+      
+      wrapper.addEventListener('touchstart', pauseAutoScroll, { passive: true });
+      wrapper.addEventListener('mousedown', pauseAutoScroll);
+      wrapper.addEventListener('scroll', () => {
+        if (autoScrollInterval) {
+          cancelAnimationFrame(autoScrollInterval.id);
+          autoScrollInterval = null;
+        }
+        if (timeoutId) clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+          if (currentView === "home" && wrapper && document.body.contains(wrapper)) {
+            startSmoothAutoScroll(wrapper);
+          }
+        }, 4000);
+      });
+    }
+    
+    // Home with SMOOTH INFINITE SCROLL Best Sellers (no abrupt slides)
     function renderHome(container) {
       const categoriesList = ["All", "Coffee", "Tea", "Cold Drinks", "Snacks", "Dessert"];
       const filtered = selectedCategory === "All" ? PRODUCTS : PRODUCTS.filter(p => p.category === selectedCategory);
@@ -335,36 +392,51 @@
           <div class="relative mt-3"><i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 text-sm"></i><input type="text" id="search-input" placeholder="Search coffee, cake..." class="w-full bg-white/80 border border-amber-200 rounded-2xl py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-amber-300"></div>
         </div>
         
-        <!-- BEST SELLER SLIDER SECTION -->
-        <div class="px-4 mt-4">
+        <!-- BEST SELLER SECTION - SMOOTH CONTINUOUS SCROLL (NO SLIDER BUTTONS) -->
+        <div class="px-4 mt-5">
           <div class="flex justify-between items-center mb-3">
             <h2 class="text-lg font-bold text-stone-800 flex items-center gap-2"><i class="fas fa-fire text-amber-500"></i> Best Sellers</h2>
-            <div class="flex gap-2">
-              <button class="slider-prev w-8 h-8 rounded-full bg-white shadow-md flex items-center justify-center text-amber-600 slider-btn"><i class="fas fa-chevron-left text-sm"></i></button>
-              <button class="slider-next w-8 h-8 rounded-full bg-white shadow-md flex items-center justify-center text-amber-600 slider-btn"><i class="fas fa-chevron-right text-sm"></i></button>
-            </div>
+            <div class="text-xs text-amber-600 bg-amber-50 px-3 py-1 rounded-full"><i class="fas fa-infinity mr-1"></i> endless scroll</div>
           </div>
-          <div class="slider-container overflow-x-auto scrollbar-hide flex gap-3 pb-2">
-            ${BEST_SELLERS.map(prod => `
-              <div class="slider-item flex-shrink-0 w-40 bg-white rounded-xl overflow-hidden shadow-sm border border-amber-100 product-card">
-                <div class="product-img-container h-32 w-full">
-                  <img src="${prod.image}" class="w-full h-full object-contain p-2" alt="${prod.name}" loading="lazy">
-                </div>
-                <div class="p-2">
-                  <span class="text-[9px] font-semibold uppercase text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">${prod.category}</span>
-                  <h3 class="font-bold text-stone-800 text-sm truncate">${prod.name}</h3>
-                  <div class="flex justify-between items-center mt-2">
-                    <span class="text-amber-800 font-bold text-sm">$${prod.price.toFixed(2)}</span>
-                    <button data-id="${prod.id}" class="add-cart-btn bg-amber-600 hover:bg-amber-700 text-white rounded-full w-7 h-7 flex items-center justify-center shadow-sm transition btn-touch"><i class="fas fa-plus text-xs"></i></button>
+          <div class="infinite-scroll-container marquee-wrapper relative overflow-x-auto scrollbar-hide rounded-xl fade-edges" id="best-seller-scroll">
+            <div class="marquee-track flex gap-3 pb-2" id="best-seller-track">
+              ${BEST_SELLERS.map(prod => `
+                <div class="slider-item w-40 bg-white rounded-xl overflow-hidden shadow-sm border border-amber-100 product-card flex-shrink-0">
+                  <div class="product-img-container h-32 w-full">
+                    <img src="${prod.image}" class="w-full h-full object-contain p-2" alt="${prod.name}" loading="lazy">
+                  </div>
+                  <div class="p-2">
+                    <span class="text-[9px] font-semibold uppercase text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">${prod.category}</span>
+                    <h3 class="font-bold text-stone-800 text-sm truncate">${prod.name}</h3>
+                    <div class="flex justify-between items-center mt-2">
+                      <span class="text-amber-800 font-bold text-sm">$${prod.price.toFixed(2)}</span>
+                      <button data-id="${prod.id}" class="add-cart-btn bg-amber-600 hover:bg-amber-700 text-white rounded-full w-7 h-7 flex items-center justify-center shadow-sm transition btn-touch"><i class="fas fa-plus text-xs"></i></button>
+                    </div>
                   </div>
                 </div>
-              </div>
-            `).join('')}
+              `).join('')}
+              <!-- Duplicate first few items for infinite seamless feel (extra smoothness) -->
+              ${BEST_SELLERS.slice(0, 3).map(prod => `
+                <div class="slider-item w-40 bg-white rounded-xl overflow-hidden shadow-sm border border-amber-100 product-card flex-shrink-0">
+                  <div class="product-img-container h-32 w-full">
+                    <img src="${prod.image}" class="w-full h-full object-contain p-2" alt="${prod.name}" loading="lazy">
+                  </div>
+                  <div class="p-2">
+                    <span class="text-[9px] font-semibold uppercase text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">${prod.category}</span>
+                    <h3 class="font-bold text-stone-800 text-sm truncate">${prod.name}</h3>
+                    <div class="flex justify-between items-center mt-2">
+                      <span class="text-amber-800 font-bold text-sm">$${prod.price.toFixed(2)}</span>
+                      <button data-id="${prod.id}" class="add-cart-btn bg-amber-600 hover:bg-amber-700 text-white rounded-full w-7 h-7 flex items-center justify-center shadow-sm transition btn-touch"><i class="fas fa-plus text-xs"></i></button>
+                    </div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
           </div>
         </div>
         
         <!-- CATEGORIES -->
-        <div class="px-4 pt-3 pb-2 overflow-x-auto scrollbar-hide">
+        <div class="px-4 pt-4 pb-2 overflow-x-auto scrollbar-hide">
           <div class="flex gap-2 whitespace-nowrap">${categoriesList.map(cat => `<button data-cat="${cat}" class="cat-btn px-4 py-1.5 rounded-full text-sm font-medium transition-all ${selectedCategory === cat ? 'bg-amber-700 text-white shadow-md' : 'bg-white border border-amber-200 text-stone-700'}">${cat}</button>`).join('')}</div>
         </div>
         
@@ -379,26 +451,35 @@
         </div>
       `;
       
-      // Initialize slider functionality
-      const sliderContainer = container.querySelector('.slider-container');
-      const prevBtn = container.querySelector('.slider-prev');
-      const nextBtn = container.querySelector('.slider-next');
-      
-      if (prevBtn) prevBtn.addEventListener('click', () => { if(sliderContainer) sliderContainer.scrollBy({ left: -sliderContainer.clientWidth, behavior: 'smooth' }); });
-      if (nextBtn) nextBtn.addEventListener('click', () => { if(sliderContainer) sliderContainer.scrollBy({ left: sliderContainer.clientWidth, behavior: 'smooth' }); });
-      
-      // Auto slider
-      if (autoSliderInterval) clearInterval(autoSliderInterval);
-      autoSliderInterval = setInterval(() => {
-        if (sliderContainer && document.body.contains(sliderContainer)) {
-          const maxScroll = sliderContainer.scrollWidth - sliderContainer.clientWidth;
-          if (sliderContainer.scrollLeft + sliderContainer.clientWidth >= maxScroll - 10) {
-            sliderContainer.scrollTo({ left: 0, behavior: 'smooth' });
-          } else {
-            sliderContainer.scrollBy({ left: sliderContainer.clientWidth, behavior: 'smooth' });
-          }
-        }
-      }, 4500);
+      // Setup best-seller smooth auto-scroll
+      const scrollContainer = container.querySelector("#best-seller-scroll");
+      if (scrollContainer) {
+        // Stop previous auto scroll if any
+        stopSmoothAutoScroll();
+        // Start new smooth infinite scroll (continuous, slow)
+        startSmoothAutoScroll(scrollContainer);
+        setupBestSellerInteractions(scrollContainer);
+        
+        // Also add manual left/right via mouse drag not needed but fine
+        let isDown = false;
+        let startX;
+        let scrollLeft;
+        scrollContainer.addEventListener('mousedown', (e) => {
+          isDown = true;
+          scrollContainer.style.cursor = 'grabbing';
+          startX = e.pageX - scrollContainer.offsetLeft;
+          scrollLeft = scrollContainer.scrollLeft;
+        });
+        scrollContainer.addEventListener('mouseleave', () => { isDown = false; scrollContainer.style.cursor = 'grab'; });
+        scrollContainer.addEventListener('mouseup', () => { isDown = false; scrollContainer.style.cursor = 'grab'; });
+        scrollContainer.addEventListener('mousemove', (e) => {
+          if (!isDown) return;
+          e.preventDefault();
+          const x = e.pageX - scrollContainer.offsetLeft;
+          const walk = (x - startX) * 1.5;
+          scrollContainer.scrollLeft = scrollLeft - walk;
+        });
+      }
       
       // Grid rendering
       const grid = container.querySelector("#product-grid");
@@ -441,9 +522,9 @@
       updateCartBadge();
     }
     
-    // Cart Page
+    // Cart Page (unchanged but included for completeness)
     function renderCart(container) {
-      if (autoSliderInterval) clearInterval(autoSliderInterval);
+      stopSmoothAutoScroll();
       const subtotal = cart.reduce((sum, i) => sum + (i.price * i.quantity), 0);
       const total = subtotal;
       container.innerHTML = `
@@ -480,7 +561,7 @@
       if (exploreBtn) exploreBtn.addEventListener("click", () => { currentView = "home"; renderCurrentView(); });
     }
     
-    // Checkout Modal
+    // Checkout Modal, Orders, Profile (kept as original)
     function showCheckoutModal() {
       const modalDiv = document.createElement("div");
       modalDiv.className = "fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4";
@@ -514,9 +595,8 @@
       modalDiv.addEventListener("click", (e) => { if(e.target === modalDiv) modalDiv.remove(); });
     }
     
-    // Orders Page
     function renderOrders(container) {
-      if (autoSliderInterval) clearInterval(autoSliderInterval);
+      stopSmoothAutoScroll();
       const storedOrders = localStorage.getItem("brew_orders");
       if (storedOrders) orderHistory = JSON.parse(storedOrders);
       const latestOrder = orderHistory[0];
@@ -531,9 +611,8 @@
       if (shopBtn) shopBtn.addEventListener("click", () => { currentView = "home"; renderCurrentView(); });
     }
     
-    // Profile Page
     function renderProfile(container) {
-      if (autoSliderInterval) clearInterval(autoSliderInterval);
+      stopSmoothAutoScroll();
       container.innerHTML = `
         <div class="px-4 pt-6 pb-4 bg-gradient-to-r from-amber-50 to-amber-100/40 border-b border-amber-100"><div class="flex items-center gap-4"><div class="w-16 h-16 rounded-full bg-amber-200 flex items-center justify-center text-3xl shadow-inner">☕</div><div><h2 class="font-bold text-xl text-stone-800">Coffee Enthusiast</h2><p class="text-sm text-stone-500">Member since 2025</p></div></div></div>
         <div class="p-5 space-y-5"><div class="bg-white rounded-xl p-4 shadow-sm flex justify-between items-center"><span><i class="fas fa-gift text-amber-600 mr-2"></i> Rewards points</span><span class="font-bold text-amber-700">1,280 pts</span></div><div class="bg-white rounded-xl p-4 shadow-sm flex items-center gap-2"><i class="fas fa-store text-amber-600"></i> Favorite store: BrewHaven Downtown</div><div class="bg-white rounded-xl p-4 shadow-sm flex items-center gap-2"><i class="fas fa-mug-hot text-amber-600"></i> Favorite drink: Cappuccino</div><button id="clear-history" class="w-full mt-2 text-stone-400 text-sm border border-stone-200 py-2 rounded-full hover:bg-stone-50 transition">Clear order history</button><p class="text-center text-xs text-stone-400 pt-4">☕ BrewHaven v2.0 · Crafted with love</p></div>
