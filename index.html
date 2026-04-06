@@ -49,7 +49,7 @@
     .sticky-shadow {
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
     }
-    /* Best seller animation - gentle pulse + soft shine (no slider transition, just continuous smooth auto-scroll) */
+    /* Best seller animation - gentle pulse + soft shine */
     @keyframes gentlePulse {
       0%, 100% { box-shadow: 0 0 0 0 rgba(193, 122, 91, 0.4); }
       50% { box-shadow: 0 0 0 6px rgba(193, 122, 91, 0.15); }
@@ -94,7 +94,7 @@
     .product-card:hover .product-img-container img {
       transform: scale(1.05);
     }
-    /* Auto-scroll smooth marquee style - infinite smooth horizontal scroll */
+    /* Smooth auto-scroll marquee style - infinite smooth horizontal scroll */
     .marquee-wrapper {
       overflow-x: auto;
       scroll-behavior: smooth;
@@ -109,22 +109,35 @@
       display: flex;
       gap: 1rem;
       width: max-content;
-      will-change: transform;
     }
     .slider-item {
       flex-shrink: 0;
       width: 160px;
     }
-    /* smooth infinite auto-scroll via JS but with continuous linear animation */
-    .infinite-scroll-container {
-      position: relative;
-      overflow-x: auto;
-      scroll-behavior: smooth;
-    }
-    /* subtle fade edges for better UX */
+    /* fade edges for better UX */
     .fade-edges {
       mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
       -webkit-mask-image: linear-gradient(to right, transparent, black 8%, black 92%, transparent);
+    }
+    /* Ripple effect for buttons */
+    .ripple-effect {
+      position: relative;
+      overflow: hidden;
+    }
+    .ripple-effect:active::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0) 80%);
+      transform: translate(-50%, -50%) scale(0);
+      animation: ripple 0.4s ease-out;
+      pointer-events: none;
+    }
+    @keyframes ripple {
+      to { transform: translate(-50%, -50%) scale(2); opacity: 0; }
     }
   </style>
 </head>
@@ -143,31 +156,31 @@
   </div>
 
   <script>
-    // ---------- PRODUCT DATABASE (20 items with CORRECT images) ----------
+    // ---------- PRODUCT DATABASE (20 items) ----------
     const PRODUCTS = [
-      { id: 1, name: "Espresso", price: 2.50, category: "Coffee", image: "https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=400&h=400&fit=crop", catKey: "coffee", bestSeller: true },
-      { id: 2, name: "Americano", price: 3.00, category: "Coffee", image: "https://images.unsplash.com/photo-1551030173-122a8f7b7c3f?w=400&h=400&fit=crop", catKey: "coffee", bestSeller: false },
-      { id: 3, name: "Cappuccino", price: 3.50, category: "Coffee", image: "https://images.unsplash.com/photo-1534778101976-62847782c1b1?w=400&h=400&fit=crop", catKey: "coffee", bestSeller: true },
-      { id: 4, name: "Latte", price: 3.80, category: "Coffee", image: "https://images.unsplash.com/photo-1561044151-70f0410fc2f4?w=400&h=400&fit=crop", catKey: "coffee", bestSeller: false },
-      { id: 5, name: "Mocha", price: 4.00, category: "Coffee", image: "https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=400&h=400&fit=crop", catKey: "coffee", bestSeller: true },
-      { id: 6, name: "Caramel Macchiato", price: 4.50, category: "Coffee", image: "https://images.unsplash.com/photo-1485808191679-5f86510682a4?w=400&h=400&fit=crop", catKey: "coffee", bestSeller: false },
-      { id: 7, name: "Iced Latte", price: 4.20, category: "Cold Drinks", image: "https://images.unsplash.com/photo-1517701604599-bb29b565090c?w=400&h=400&fit=crop", catKey: "cold", bestSeller: true },
-      { id: 8, name: "Iced Americano", price: 3.20, category: "Cold Drinks", image: "https://images.unsplash.com/photo-1551107696-a4b0c5a0d9a2?w=400&h=400&fit=crop", catKey: "cold", bestSeller: false },
-      { id: 9, name: "Cold Brew", price: 4.00, category: "Cold Drinks", image: "https://images.unsplash.com/photo-1561758033-d89a9ad46330?w=400&h=400&fit=crop", catKey: "cold", bestSeller: true },
-      { id: 10, name: "Iced Mocha", price: 4.30, category: "Cold Drinks", image: "https://images.unsplash.com/photo-1577968897966-3d4325b36b61?w=400&h=400&fit=crop", catKey: "cold", bestSeller: false },
-      { id: 11, name: "Green Tea", price: 2.50, category: "Tea", image: "https://images.unsplash.com/photo-1627435601361-ec25f5b1d0e5?w=400&h=400&fit=crop", catKey: "tea", bestSeller: false },
-      { id: 12, name: "Thai Milk Tea", price: 3.20, category: "Tea", image: "https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=400&h=400&fit=crop", catKey: "tea", bestSeller: true },
-      { id: 13, name: "Lemon Tea", price: 2.80, category: "Tea", image: "https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=400&h=400&fit=crop", catKey: "tea", bestSeller: false },
-      { id: 14, name: "Croissant", price: 2.80, category: "Snacks", image: "https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=400&h=400&fit=crop", catKey: "snacks", bestSeller: true },
-      { id: 15, name: "Chocolate Muffin", price: 3.00, category: "Snacks", image: "https://images.unsplash.com/photo-1607958996333-41aef7caefaa?w=400&h=400&fit=crop", catKey: "snacks", bestSeller: false },
-      { id: 16, name: "Sandwich", price: 3.50, category: "Snacks", image: "https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=400&h=400&fit=crop", catKey: "snacks", bestSeller: false },
-      { id: 17, name: "Donut", price: 2.20, category: "Snacks", image: "https://images.unsplash.com/photo-1551024601-bec78aea704b?w=400&h=400&fit=crop", catKey: "snacks", bestSeller: true },
-      { id: 18, name: "Cheesecake", price: 4.50, category: "Dessert", image: "https://images.unsplash.com/photo-1533134242443-d4fd215305ad?w=400&h=400&fit=crop", catKey: "dessert", bestSeller: true },
-      { id: 19, name: "Chocolate Cake", price: 4.20, category: "Dessert", image: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&h=400&fit=crop", catKey: "dessert", bestSeller: false },
-      { id: 20, name: "Tiramisu", price: 4.80, category: "Dessert", image: "https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?w=400&h=400&fit=crop", catKey: "dessert", bestSeller: true }
+      { id: 1, name: "Espresso", price: 2.50, category: "Coffee", image: "https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=400&h=400&fit=crop", bestSeller: true },
+      { id: 2, name: "Americano", price: 3.00, category: "Coffee", image: "https://images.unsplash.com/photo-1551030173-122a8f7b7c3f?w=400&h=400&fit=crop", bestSeller: false },
+      { id: 3, name: "Cappuccino", price: 3.50, category: "Coffee", image: "https://images.unsplash.com/photo-1534778101976-62847782c1b1?w=400&h=400&fit=crop", bestSeller: true },
+      { id: 4, name: "Latte", price: 3.80, category: "Coffee", image: "https://images.unsplash.com/photo-1561044151-70f0410fc2f4?w=400&h=400&fit=crop", bestSeller: false },
+      { id: 5, name: "Mocha", price: 4.00, category: "Coffee", image: "https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=400&h=400&fit=crop", bestSeller: true },
+      { id: 6, name: "Caramel Macchiato", price: 4.50, category: "Coffee", image: "https://images.unsplash.com/photo-1485808191679-5f86510682a4?w=400&h=400&fit=crop", bestSeller: false },
+      { id: 7, name: "Iced Latte", price: 4.20, category: "Cold Drinks", image: "https://images.unsplash.com/photo-1517701604599-bb29b565090c?w=400&h=400&fit=crop", bestSeller: true },
+      { id: 8, name: "Iced Americano", price: 3.20, category: "Cold Drinks", image: "https://images.unsplash.com/photo-1551107696-a4b0c5a0d9a2?w=400&h=400&fit=crop", bestSeller: false },
+      { id: 9, name: "Cold Brew", price: 4.00, category: "Cold Drinks", image: "https://images.unsplash.com/photo-1561758033-d89a9ad46330?w=400&h=400&fit=crop", bestSeller: true },
+      { id: 10, name: "Iced Mocha", price: 4.30, category: "Cold Drinks", image: "https://images.unsplash.com/photo-1577968897966-3d4325b36b61?w=400&h=400&fit=crop", bestSeller: false },
+      { id: 11, name: "Green Tea", price: 2.50, category: "Tea", image: "https://images.unsplash.com/photo-1627435601361-ec25f5b1d0e5?w=400&h=400&fit=crop", bestSeller: false },
+      { id: 12, name: "Thai Milk Tea", price: 3.20, category: "Tea", image: "https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=400&h=400&fit=crop", bestSeller: true },
+      { id: 13, name: "Lemon Tea", price: 2.80, category: "Tea", image: "https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=400&h=400&fit=crop", bestSeller: false },
+      { id: 14, name: "Croissant", price: 2.80, category: "Snacks", image: "https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=400&h=400&fit=crop", bestSeller: true },
+      { id: 15, name: "Chocolate Muffin", price: 3.00, category: "Snacks", image: "https://images.unsplash.com/photo-1607958996333-41aef7caefaa?w=400&h=400&fit=crop", bestSeller: false },
+      { id: 16, name: "Sandwich", price: 3.50, category: "Snacks", image: "https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=400&h=400&fit=crop", bestSeller: false },
+      { id: 17, name: "Donut", price: 2.20, category: "Snacks", image: "https://images.unsplash.com/photo-1551024601-bec78aea704b?w=400&h=400&fit=crop", bestSeller: true },
+      { id: 18, name: "Cheesecake", price: 4.50, category: "Dessert", image: "https://images.unsplash.com/photo-1533134242443-d4fd215305ad?w=400&h=400&fit=crop", bestSeller: true },
+      { id: 19, name: "Chocolate Cake", price: 4.20, category: "Dessert", image: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&h=400&fit=crop", bestSeller: false },
+      { id: 20, name: "Tiramisu", price: 4.80, category: "Dessert", image: "https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?w=400&h=400&fit=crop", bestSeller: true }
     ];
 
-    // Best sellers list
+    // Best sellers list (8 items)
     const BEST_SELLERS = PRODUCTS.filter(p => p.bestSeller === true);
 
     // Cart functions
@@ -254,9 +267,11 @@
     let currentView = "home";
     let selectedCategory = "All";
     let orderHistory = [];
-    let autoScrollInterval = null;    // for smooth auto-scroll animation
-    let bestSellerScrollActive = true;
-    
+    let autoScrollAnimationId = null;
+    let isAutoScrolling = true;
+    let autoScrollDelayTimer = null;
+    let currentScrollContainer = null;
+
     function renderCurrentView() {
       const container = document.getElementById("main-view");
       if (!container) return;
@@ -283,105 +298,137 @@
       });
     }
     
-    // SMOOTH INFINITE AUTO-SCROLL FOR BEST SELLER (continuous and slow)
+    // SMOOTH CONTINUOUS AUTO-SCROLL FOR BEST SELLER SECTION
     function startSmoothAutoScroll(containerElement) {
-      if (autoScrollInterval) clearInterval(autoScrollInterval);
       if (!containerElement) return;
       
-      // Make sure we have scrollable content
+      // Stop any existing animation
+      if (autoScrollAnimationId) {
+        cancelAnimationFrame(autoScrollAnimationId);
+        autoScrollAnimationId = null;
+      }
+      
       const scrollWidth = containerElement.scrollWidth;
       const clientWidth = containerElement.clientWidth;
-      if (scrollWidth <= clientWidth) return;
       
-      let step = 0.8; // Pixels per frame (smooth & slow)
-      let animationFrameId = null;
+      // Only auto-scroll if content is wider than container
+      if (scrollWidth <= clientWidth + 10) return;
+      
+      isAutoScrolling = true;
       let lastTimestamp = 0;
-      let direction = 1; // 1 = forward, -1 = backward (for seamless loop)
+      const scrollSpeed = 0.6; // pixels per frame (smooth and slow)
       
-      // We'll implement a smooth step-based animation that loops seamlessly
-      function scrollStep() {
-        if (!containerElement || !bestSellerScrollActive || currentView !== "home") {
-          if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      function animateScroll() {
+        if (!isAutoScrolling || !containerElement || currentView !== "home") {
           return;
         }
         
-        let newScrollLeft = containerElement.scrollLeft + step;
+        let newScrollLeft = containerElement.scrollLeft + scrollSpeed;
         const maxScroll = containerElement.scrollWidth - containerElement.clientWidth;
         
-        // Seamless loop: if we reach near end, reset to 0 without jump (or reverse smoothly)
-        if (newScrollLeft >= maxScroll - 2) {
-          // Instead of abrupt jump, we reset instantly but visually we can wrap content clone? but simpler:
-          // Reset to 0 instantly — but because of smooth motion, slight jump might happen.
-          // For buttery smooth infinite we can duplicate items? But easiest: wrap smoothly by resetting without user noticing.
-          // We'll reset with a very tiny frame that's almost invisible because we set to 0 and continue.
+        // Seamless loop: when reaching the end, smoothly reset to start
+        if (newScrollLeft >= maxScroll - 5) {
+          // Jump back to start instantly (creates infinite loop effect)
           containerElement.scrollLeft = 0;
-          newScrollLeft = step;
+          newScrollLeft = scrollSpeed;
+        } else if (newScrollLeft < 0) {
+          containerElement.scrollLeft = maxScroll;
+          newScrollLeft = maxScroll - scrollSpeed;
         }
         
         containerElement.scrollLeft = newScrollLeft;
-        animationFrameId = requestAnimationFrame(scrollStep);
+        autoScrollAnimationId = requestAnimationFrame(animateScroll);
       }
       
-      // Start animation
-      bestSellerScrollActive = true;
-      if (animationFrameId) cancelAnimationFrame(animationFrameId);
-      animationFrameId = requestAnimationFrame(scrollStep);
-      
-      // Store the frame id for cleanup
-      autoScrollInterval = { type: 'frame', id: animationFrameId, frameFn: scrollStep };
-      // Also attach to container for cleanup
-      containerElement._autoFrameId = animationFrameId;
+      autoScrollAnimationId = requestAnimationFrame(animateScroll);
     }
     
     function stopSmoothAutoScroll() {
-      bestSellerScrollActive = false;
-      if (autoScrollInterval) {
-        if (autoScrollInterval.id) {
-          cancelAnimationFrame(autoScrollInterval.id);
-        }
-        autoScrollInterval = null;
+      isAutoScrolling = false;
+      if (autoScrollAnimationId) {
+        cancelAnimationFrame(autoScrollAnimationId);
+        autoScrollAnimationId = null;
       }
     }
     
-    // Manual control for best-seller section while preserving smooth scroll after a while
-    function setupBestSellerInteractions(wrapper) {
-      if (!wrapper) return;
-      let timeoutId = null;
+    function pauseAutoScrollTemporarily(containerElement) {
+      if (!containerElement) return;
       
-      const pauseAutoScroll = () => {
-        if (autoScrollInterval && autoScrollInterval.id) {
-          cancelAnimationFrame(autoScrollInterval.id);
-          autoScrollInterval = null;
+      // Pause the auto-scroll
+      const wasScrolling = isAutoScrolling;
+      stopSmoothAutoScroll();
+      
+      // Clear any existing delay timer
+      if (autoScrollDelayTimer) clearTimeout(autoScrollDelayTimer);
+      
+      // Resume auto-scroll after 4 seconds of user inactivity
+      autoScrollDelayTimer = setTimeout(() => {
+        if (currentView === "home" && containerElement && document.body.contains(containerElement)) {
+          startSmoothAutoScroll(containerElement);
         }
-        if (timeoutId) clearTimeout(timeoutId);
-        // Resume auto scroll after 4 seconds of inactivity
-        timeoutId = setTimeout(() => {
-          if (currentView === "home" && wrapper && document.body.contains(wrapper)) {
-            startSmoothAutoScroll(wrapper);
-          }
-        }, 4000);
+        autoScrollDelayTimer = null;
+      }, 4000);
+    }
+    
+    function setupBestSellerInteractions(containerElement) {
+      if (!containerElement) return;
+      
+      // Pause on user interaction (scroll, touch, mouse)
+      const pauseHandler = () => {
+        if (isAutoScrolling) {
+          pauseAutoScrollTemporarily(containerElement);
+        }
       };
       
-      wrapper.addEventListener('touchstart', pauseAutoScroll, { passive: true });
-      wrapper.addEventListener('mousedown', pauseAutoScroll);
-      wrapper.addEventListener('scroll', () => {
-        if (autoScrollInterval) {
-          cancelAnimationFrame(autoScrollInterval.id);
-          autoScrollInterval = null;
+      containerElement.addEventListener('touchstart', pauseHandler, { passive: true });
+      containerElement.addEventListener('mousedown', pauseHandler);
+      containerElement.addEventListener('wheel', pauseHandler, { passive: true });
+      
+      // Also pause on hover (for desktop)
+      containerElement.addEventListener('mouseenter', () => {
+        if (isAutoScrolling) {
+          pauseAutoScrollTemporarily(containerElement);
         }
-        if (timeoutId) clearTimeout(timeoutId);
-        timeoutId = setTimeout(() => {
-          if (currentView === "home" && wrapper && document.body.contains(wrapper)) {
-            startSmoothAutoScroll(wrapper);
-          }
-        }, 4000);
+      });
+      
+      // Enable drag scrolling
+      let isDown = false;
+      let startX;
+      let scrollLeft;
+      
+      containerElement.addEventListener('mousedown', (e) => {
+        isDown = true;
+        containerElement.style.cursor = 'grabbing';
+        startX = e.pageX - containerElement.offsetLeft;
+        scrollLeft = containerElement.scrollLeft;
+      });
+      
+      containerElement.addEventListener('mouseleave', () => {
+        isDown = false;
+        containerElement.style.cursor = 'grab';
+      });
+      
+      containerElement.addEventListener('mouseup', () => {
+        isDown = false;
+        containerElement.style.cursor = 'grab';
+      });
+      
+      containerElement.addEventListener('mousemove', (e) => {
+        if (!isDown) return;
+        e.preventDefault();
+        const x = e.pageX - containerElement.offsetLeft;
+        const walk = (x - startX) * 1.2;
+        containerElement.scrollLeft = scrollLeft - walk;
       });
     }
     
-    // Home with SMOOTH INFINITE SCROLL Best Sellers (no abrupt slides)
+    // Home Page with Best Seller Smooth Auto-Scroll
     function renderHome(container) {
       const categoriesList = ["All", "Coffee", "Tea", "Cold Drinks", "Snacks", "Dessert"];
       const filtered = selectedCategory === "All" ? PRODUCTS : PRODUCTS.filter(p => p.category === selectedCategory);
+      
+      // Duplicate best sellers for seamless infinite feel
+      const bestSellersInfinite = [...BEST_SELLERS, ...BEST_SELLERS, ...BEST_SELLERS.slice(0, 4)];
       
       container.innerHTML = `
         <div class="sticky top-0 z-20 bg-[#fefaf5]/95 backdrop-blur-sm pt-5 pb-2 px-4 border-b border-amber-100 sticky-shadow">
@@ -392,31 +439,15 @@
           <div class="relative mt-3"><i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 text-sm"></i><input type="text" id="search-input" placeholder="Search coffee, cake..." class="w-full bg-white/80 border border-amber-200 rounded-2xl py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-amber-300"></div>
         </div>
         
-        <!-- BEST SELLER SECTION - SMOOTH CONTINUOUS SCROLL (NO SLIDER BUTTONS) -->
+        <!-- BEST SELLER SECTION - SMOOTH CONTINUOUS AUTO-SCROLL -->
         <div class="px-4 mt-5">
           <div class="flex justify-between items-center mb-3">
             <h2 class="text-lg font-bold text-stone-800 flex items-center gap-2"><i class="fas fa-fire text-amber-500"></i> Best Sellers</h2>
-            <div class="text-xs text-amber-600 bg-amber-50 px-3 py-1 rounded-full"><i class="fas fa-infinity mr-1"></i> endless scroll</div>
+            <div class="text-xs text-amber-600 bg-amber-50 px-3 py-1 rounded-full"><i class="fas fa-play-circle mr-1"></i> auto-scroll</div>
           </div>
-          <div class="infinite-scroll-container marquee-wrapper relative overflow-x-auto scrollbar-hide rounded-xl fade-edges" id="best-seller-scroll">
-            <div class="marquee-track flex gap-3 pb-2" id="best-seller-track">
-              ${BEST_SELLERS.map(prod => `
-                <div class="slider-item w-40 bg-white rounded-xl overflow-hidden shadow-sm border border-amber-100 product-card flex-shrink-0">
-                  <div class="product-img-container h-32 w-full">
-                    <img src="${prod.image}" class="w-full h-full object-contain p-2" alt="${prod.name}" loading="lazy">
-                  </div>
-                  <div class="p-2">
-                    <span class="text-[9px] font-semibold uppercase text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">${prod.category}</span>
-                    <h3 class="font-bold text-stone-800 text-sm truncate">${prod.name}</h3>
-                    <div class="flex justify-between items-center mt-2">
-                      <span class="text-amber-800 font-bold text-sm">$${prod.price.toFixed(2)}</span>
-                      <button data-id="${prod.id}" class="add-cart-btn bg-amber-600 hover:bg-amber-700 text-white rounded-full w-7 h-7 flex items-center justify-center shadow-sm transition btn-touch"><i class="fas fa-plus text-xs"></i></button>
-                    </div>
-                  </div>
-                </div>
-              `).join('')}
-              <!-- Duplicate first few items for infinite seamless feel (extra smoothness) -->
-              ${BEST_SELLERS.slice(0, 3).map(prod => `
+          <div class="marquee-wrapper relative overflow-x-auto scrollbar-hide rounded-xl fade-edges" id="best-seller-scroll" style="cursor: grab;">
+            <div class="marquee-track flex gap-3 pb-2">
+              ${bestSellersInfinite.map(prod => `
                 <div class="slider-item w-40 bg-white rounded-xl overflow-hidden shadow-sm border border-amber-100 product-card flex-shrink-0">
                   <div class="product-img-container h-32 w-full">
                     <img src="${prod.image}" class="w-full h-full object-contain p-2" alt="${prod.name}" loading="lazy">
@@ -454,39 +485,32 @@
       // Setup best-seller smooth auto-scroll
       const scrollContainer = container.querySelector("#best-seller-scroll");
       if (scrollContainer) {
-        // Stop previous auto scroll if any
-        stopSmoothAutoScroll();
-        // Start new smooth infinite scroll (continuous, slow)
-        startSmoothAutoScroll(scrollContainer);
-        setupBestSellerInteractions(scrollContainer);
+        // Store reference for cleanup
+        currentScrollContainer = scrollContainer;
         
-        // Also add manual left/right via mouse drag not needed but fine
-        let isDown = false;
-        let startX;
-        let scrollLeft;
-        scrollContainer.addEventListener('mousedown', (e) => {
-          isDown = true;
-          scrollContainer.style.cursor = 'grabbing';
-          startX = e.pageX - scrollContainer.offsetLeft;
-          scrollLeft = scrollContainer.scrollLeft;
-        });
-        scrollContainer.addEventListener('mouseleave', () => { isDown = false; scrollContainer.style.cursor = 'grab'; });
-        scrollContainer.addEventListener('mouseup', () => { isDown = false; scrollContainer.style.cursor = 'grab'; });
-        scrollContainer.addEventListener('mousemove', (e) => {
-          if (!isDown) return;
-          e.preventDefault();
-          const x = e.pageX - scrollContainer.offsetLeft;
-          const walk = (x - startX) * 1.5;
-          scrollContainer.scrollLeft = scrollLeft - walk;
-        });
+        // Stop any existing auto-scroll
+        stopSmoothAutoScroll();
+        
+        // Start new smooth infinite auto-scroll
+        setTimeout(() => {
+          if (currentView === "home" && scrollContainer && document.body.contains(scrollContainer)) {
+            startSmoothAutoScroll(scrollContainer);
+          }
+        }, 100);
+        
+        // Setup interactions (pause on hover/scroll)
+        setupBestSellerInteractions(scrollContainer);
       }
       
-      // Grid rendering
+      // Product grid rendering
       const grid = container.querySelector("#product-grid");
       function renderGrid(searchTerm = "") {
         let data = filtered;
         if (searchTerm) data = data.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
-        if (data.length === 0) { grid.innerHTML = `<div class="col-span-2 text-center py-12 text-stone-400"><i class="fas fa-mug-hot text-3xl mb-2 opacity-40"></i><p>No items found 🍵</p></div>`; return; }
+        if (data.length === 0) { 
+          grid.innerHTML = `<div class="col-span-2 text-center py-12 text-stone-400"><i class="fas fa-mug-hot text-3xl mb-2 opacity-40"></i><p>No items found 🍵</p></div>`; 
+          return; 
+        }
         
         grid.innerHTML = data.map(prod => `
           <div class="product-card bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all border border-amber-50 ${prod.bestSeller ? 'best-seller-glow' : ''} relative">
@@ -509,11 +533,16 @@
           btn.addEventListener("click", (e) => { e.stopPropagation(); addToCart(parseInt(btn.dataset.id)); });
         });
       }
+      
       renderGrid("");
       const searchInput = container.querySelector("#search-input");
       if (searchInput) searchInput.addEventListener("input", (e) => renderGrid(e.target.value));
+      
       container.querySelectorAll(".cat-btn").forEach(btn => {
-        btn.addEventListener("click", () => { selectedCategory = btn.dataset.cat; renderCurrentView(); });
+        btn.addEventListener("click", () => { 
+          selectedCategory = btn.dataset.cat; 
+          renderCurrentView(); 
+        });
       });
       
       const headerCart = container.querySelector("#header-cart");
@@ -522,9 +551,11 @@
       updateCartBadge();
     }
     
-    // Cart Page (unchanged but included for completeness)
+    // Cart Page
     function renderCart(container) {
       stopSmoothAutoScroll();
+      if (autoScrollDelayTimer) clearTimeout(autoScrollDelayTimer);
+      
       const subtotal = cart.reduce((sum, i) => sum + (i.price * i.quantity), 0);
       const total = subtotal;
       container.innerHTML = `
@@ -538,8 +569,9 @@
         </div>
       `;
       const itemsContainer = container.querySelector("#cart-items-list");
-      if (cart.length === 0) itemsContainer.innerHTML = `<div class="text-center py-12 text-stone-400"><i class="fas fa-shopping-bag text-4xl mb-3 opacity-40"></i><p>Your cart is empty</p><button id="explore-menu" class="mt-3 text-amber-600 underline">Explore menu</button></div>`;
-      else {
+      if (cart.length === 0) {
+        itemsContainer.innerHTML = `<div class="text-center py-12 text-stone-400"><i class="fas fa-shopping-bag text-4xl mb-3 opacity-40"></i><p>Your cart is empty</p><button id="explore-menu" class="mt-3 text-amber-600 underline">Explore menu</button></div>`;
+      } else {
         itemsContainer.innerHTML = cart.map(item => `
           <div class="flex gap-3 bg-white p-3 rounded-xl shadow-sm items-center">
             <div class="w-14 h-14 rounded-lg overflow-hidden bg-amber-50 flex items-center justify-center"><img src="${item.image}" class="w-full h-full object-contain"></div>
@@ -561,7 +593,7 @@
       if (exploreBtn) exploreBtn.addEventListener("click", () => { currentView = "home"; renderCurrentView(); });
     }
     
-    // Checkout Modal, Orders, Profile (kept as original)
+    // Checkout Modal
     function showCheckoutModal() {
       const modalDiv = document.createElement("div");
       modalDiv.className = "fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4";
@@ -595,6 +627,7 @@
       modalDiv.addEventListener("click", (e) => { if(e.target === modalDiv) modalDiv.remove(); });
     }
     
+    // Orders Page
     function renderOrders(container) {
       stopSmoothAutoScroll();
       const storedOrders = localStorage.getItem("brew_orders");
@@ -611,6 +644,7 @@
       if (shopBtn) shopBtn.addEventListener("click", () => { currentView = "home"; renderCurrentView(); });
     }
     
+    // Profile Page
     function renderProfile(container) {
       stopSmoothAutoScroll();
       container.innerHTML = `
