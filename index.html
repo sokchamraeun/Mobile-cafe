@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>BrewHaven · Coffee Ordering</title>
+  <title>BrewHaven · Premium Coffee Ordering</title>
   <!-- Tailwind CSS + Font Awesome + Google Fonts -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
   <style>
     * {
       font-family: 'Inter', sans-serif;
@@ -16,7 +16,6 @@
       background: #faf7f2;
       padding-bottom: 72px;
     }
-    /* Hide scrollbar but keep functionality for horizontal categories */
     .scrollbar-hide::-webkit-scrollbar {
       display: none;
     }
@@ -24,9 +23,12 @@
       -ms-overflow-style: none;
       scrollbar-width: none;
     }
-    /* card hover / active animation */
     .product-card {
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      transition: transform 0.25s cubic-bezier(0.2, 0.9, 0.4, 1.1), box-shadow 0.25s ease;
+    }
+    .product-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 12px 24px -12px rgba(0, 0, 0, 0.15);
     }
     .product-card:active {
       transform: scale(0.98);
@@ -37,7 +39,6 @@
     .btn-touch:active {
       transform: scale(0.94);
     }
-    /* bottom nav active indicator */
     .nav-active {
       color: #c07a5b;
       position: relative;
@@ -45,22 +46,104 @@
     .nav-active i {
       transform: translateY(-2px);
     }
-    .cart-badge {
-      transition: all 0.2s;
-    }
-    /* sticky header shadow */
     .sticky-shadow {
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+    }
+    /* Best seller animation - pulse + shine */
+    @keyframes gentlePulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(193, 122, 91, 0.4); }
+      50% { box-shadow: 0 0 0 6px rgba(193, 122, 91, 0.15); }
+    }
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+    .best-seller-badge {
+      animation: gentlePulse 1.8s infinite;
+    }
+    .best-seller-glow {
+      position: relative;
+      overflow: hidden;
+    }
+    .best-seller-glow::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,215,175,0.3), transparent);
+      animation: shimmer 2.5s infinite;
+      pointer-events: none;
+    }
+    /* Image container - full uncropped images */
+    .product-img-container {
+      background: linear-gradient(135deg, #fef9f0 0%, #faf3e6 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      position: relative;
+    }
+    .product-img-container img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      transition: transform 0.3s ease;
+    }
+    .product-card:hover .product-img-container img {
+      transform: scale(1.05);
+    }
+    /* Slider animations */
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(20px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    .slider-item {
+      animation: slideIn 0.4s ease-out;
+    }
+    .slider-btn {
+      transition: all 0.2s ease;
+    }
+    .slider-btn:active {
+      transform: scale(0.9);
+    }
+    /* Ripple effect */
+    .ripple-effect {
+      position: relative;
+      overflow: hidden;
+    }
+    .ripple-effect:active::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0) 80%);
+      transform: translate(-50%, -50%) scale(0);
+      animation: ripple 0.4s ease-out;
+      pointer-events: none;
+    }
+    @keyframes ripple {
+      to { transform: translate(-50%, -50%) scale(2); opacity: 0; }
+    }
+    /* Auto-scroll smooth */
+    .slider-container {
+      scroll-behavior: smooth;
+      scroll-snap-type: x mandatory;
+    }
+    .slider-container > * {
+      scroll-snap-align: start;
     }
   </style>
 </head>
 <body class="antialiased">
 
   <div id="app" class="max-w-md mx-auto bg-[#fefaf5] min-h-screen relative shadow-xl">
-    <!-- MAIN VIEW ROUTER (dynamic) -->
     <main id="main-view" class="pb-20"></main>
 
-    <!-- BOTTOM NAVIGATION (fixed) -->
+    <!-- BOTTOM NAVIGATION -->
     <div class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white/95 backdrop-blur-sm border-t border-amber-100/80 px-4 py-2 flex justify-around items-center z-30 shadow-[0_-4px_12px_-2px_rgba(0,0,0,0.05)]">
       <button data-nav="home" class="nav-btn flex flex-col items-center gap-1 text-gray-600 text-sm font-medium transition-colors"><i class="fas fa-home text-xl"></i><span>Home</span></button>
       <button data-nav="orders" class="nav-btn flex flex-col items-center gap-1 text-gray-600 text-sm font-medium"><i class="fas fa-receipt text-xl"></i><span>Orders</span></button>
@@ -70,31 +153,34 @@
   </div>
 
   <script>
-    // ---------- PRODUCT DATABASE (20 items) ----------
+    // ---------- PRODUCT DATABASE (20 items with CORRECT images) ----------
     const PRODUCTS = [
-      { id: 1, name: "Espresso", price: 2.50, category: "Coffee", image: "https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=400&h=400&fit=crop", catKey: "coffee" },
-      { id: 2, name: "Americano", price: 3.00, category: "Coffee", image: "https://images.unsplash.com/photo-1551030173-122a8f7b7c3f?w=400&h=400&fit=crop", catKey: "coffee" },
-      { id: 3, name: "Cappuccino", price: 3.50, category: "Coffee", image: "https://images.unsplash.com/photo-1534778101976-62847782c1b1?w=400&h=400&fit=crop", catKey: "coffee" },
-      { id: 4, name: "Latte", price: 3.80, category: "Coffee", image: "https://images.unsplash.com/photo-1561044151-70f0410fc2f4?w=400&h=400&fit=crop", catKey: "coffee" },
-      { id: 5, name: "Mocha", price: 4.00, category: "Coffee", image: "https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=400&h=400&fit=crop", catKey: "coffee" },
-      { id: 6, name: "Caramel Macchiato", price: 4.50, category: "Coffee", image: "https://images.unsplash.com/photo-1485808191679-5f86510682a4?w=400&h=400&fit=crop", catKey: "coffee" },
-      { id: 7, name: "Iced Latte", price: 4.20, category: "Cold Drinks", image: "https://images.unsplash.com/photo-1517701604599-bb29b565090c?w=400&h=400&fit=crop", catKey: "cold" },
-      { id: 8, name: "Iced Americano", price: 3.20, category: "Cold Drinks", image: "https://images.unsplash.com/photo-1551107696-a4b0c5a0d9a2?w=400&h=400&fit=crop", catKey: "cold" },
-      { id: 9, name: "Cold Brew", price: 4.00, category: "Cold Drinks", image: "https://images.unsplash.com/photo-1561758033-d89a9ad46330?w=400&h=400&fit=crop", catKey: "cold" },
-      { id: 10, name: "Iced Mocha", price: 4.30, category: "Cold Drinks", image: "https://images.unsplash.com/photo-1577968897966-3d4325b36b61?w=400&h=400&fit=crop", catKey: "cold" },
-      { id: 11, name: "Green Tea", price: 2.50, category: "Tea", image: "https://images.unsplash.com/photo-1627435601361-ec25f5b1d0e5?w=400&h=400&fit=crop", catKey: "tea" },
-      { id: 12, name: "Thai Milk Tea", price: 3.20, category: "Tea", image: "https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=400&h=400&fit=crop", catKey: "tea" },
-      { id: 13, name: "Lemon Tea", price: 2.80, category: "Tea", image: "https://images.unsplash.com/photo-1556679343-7306c1976bc?w=400&h=400&fit=crop", catKey: "tea" },
-      { id: 14, name: "Croissant", price: 2.80, category: "Snacks", image: "https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=400&h=400&fit=crop", catKey: "snacks" },
-      { id: 15, name: "Chocolate Muffin", price: 3.00, category: "Snacks", image: "https://images.unsplash.com/photo-1607958996333-41aef7caefaa?w=400&h=400&fit=crop", catKey: "snacks" },
-      { id: 16, name: "Sandwich", price: 3.50, category: "Snacks", image: "https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=400&h=400&fit=crop", catKey: "snacks" },
-      { id: 17, name: "Donut", price: 2.20, category: "Snacks", image: "https://images.unsplash.com/photo-1551024601-bec78aea704b?w=400&h=400&fit=crop", catKey: "snacks" },
-      { id: 18, name: "Cheesecake", price: 4.50, category: "Dessert", image: "https://images.unsplash.com/photo-1533134242443-d4fd215305ad?w=400&h=400&fit=crop", catKey: "dessert" },
-      { id: 19, name: "Chocolate Cake", price: 4.20, category: "Dessert", image: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&h=400&fit=crop", catKey: "dessert" },
-      { id: 20, name: "Tiramisu", price: 4.80, category: "Dessert", image: "https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?w=400&h=400&fit=crop", catKey: "dessert" }
+      { id: 1, name: "Espresso", price: 2.50, category: "Coffee", image: "https://images.unsplash.com/photo-1510591509098-f4fdc6d0ff04?w=400&h=400&fit=crop", catKey: "coffee", bestSeller: true },
+      { id: 2, name: "Americano", price: 3.00, category: "Coffee", image: "https://images.unsplash.com/photo-1551030173-122a8f7b7c3f?w=400&h=400&fit=crop", catKey: "coffee", bestSeller: false },
+      { id: 3, name: "Cappuccino", price: 3.50, category: "Coffee", image: "https://images.unsplash.com/photo-1534778101976-62847782c1b1?w=400&h=400&fit=crop", catKey: "coffee", bestSeller: true },
+      { id: 4, name: "Latte", price: 3.80, category: "Coffee", image: "https://images.unsplash.com/photo-1561044151-70f0410fc2f4?w=400&h=400&fit=crop", catKey: "coffee", bestSeller: false },
+      { id: 5, name: "Mocha", price: 4.00, category: "Coffee", image: "https://images.unsplash.com/photo-1572442388796-11668a67e53d?w=400&h=400&fit=crop", catKey: "coffee", bestSeller: true },
+      { id: 6, name: "Caramel Macchiato", price: 4.50, category: "Coffee", image: "https://images.unsplash.com/photo-1485808191679-5f86510682a4?w=400&h=400&fit=crop", catKey: "coffee", bestSeller: false },
+      { id: 7, name: "Iced Latte", price: 4.20, category: "Cold Drinks", image: "https://images.unsplash.com/photo-1517701604599-bb29b565090c?w=400&h=400&fit=crop", catKey: "cold", bestSeller: true },
+      { id: 8, name: "Iced Americano", price: 3.20, category: "Cold Drinks", image: "https://images.unsplash.com/photo-1551107696-a4b0c5a0d9a2?w=400&h=400&fit=crop", catKey: "cold", bestSeller: false },
+      { id: 9, name: "Cold Brew", price: 4.00, category: "Cold Drinks", image: "https://images.unsplash.com/photo-1561758033-d89a9ad46330?w=400&h=400&fit=crop", catKey: "cold", bestSeller: true },
+      { id: 10, name: "Iced Mocha", price: 4.30, category: "Cold Drinks", image: "https://images.unsplash.com/photo-1577968897966-3d4325b36b61?w=400&h=400&fit=crop", catKey: "cold", bestSeller: false },
+      { id: 11, name: "Green Tea", price: 2.50, category: "Tea", image: "https://images.unsplash.com/photo-1627435601361-ec25f5b1d0e5?w=400&h=400&fit=crop", catKey: "tea", bestSeller: false },
+      { id: 12, name: "Thai Milk Tea", price: 3.20, category: "Tea", image: "https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=400&h=400&fit=crop", catKey: "tea", bestSeller: true },
+      { id: 13, name: "Lemon Tea", price: 2.80, category: "Tea", image: "https://images.unsplash.com/photo-1556679343-c7306c1976bc?w=400&h=400&fit=crop", catKey: "tea", bestSeller: false },
+      { id: 14, name: "Croissant", price: 2.80, category: "Snacks", image: "https://images.unsplash.com/photo-1555507036-ab1f4038808a?w=400&h=400&fit=crop", catKey: "snacks", bestSeller: true },
+      { id: 15, name: "Chocolate Muffin", price: 3.00, category: "Snacks", image: "https://images.unsplash.com/photo-1607958996333-41aef7caefaa?w=400&h=400&fit=crop", catKey: "snacks", bestSeller: false },
+      { id: 16, name: "Sandwich", price: 3.50, category: "Snacks", image: "https://images.unsplash.com/photo-1528735602780-2552fd46c7af?w=400&h=400&fit=crop", catKey: "snacks", bestSeller: false },
+      { id: 17, name: "Donut", price: 2.20, category: "Snacks", image: "https://images.unsplash.com/photo-1551024601-bec78aea704b?w=400&h=400&fit=crop", catKey: "snacks", bestSeller: true },
+      { id: 18, name: "Cheesecake", price: 4.50, category: "Dessert", image: "https://images.unsplash.com/photo-1533134242443-d4fd215305ad?w=400&h=400&fit=crop", catKey: "dessert", bestSeller: true },
+      { id: 19, name: "Chocolate Cake", price: 4.20, category: "Dessert", image: "https://images.unsplash.com/photo-1578985545062-69928b1d9587?w=400&h=400&fit=crop", catKey: "dessert", bestSeller: false },
+      { id: 20, name: "Tiramisu", price: 4.80, category: "Dessert", image: "https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?w=400&h=400&fit=crop", catKey: "dessert", bestSeller: true }
     ];
 
-    // ----- Helper: Cart (localStorage) -----
+    // Best sellers list
+    const BEST_SELLERS = PRODUCTS.filter(p => p.bestSeller === true);
+
+    // Cart functions
     let cart = [];
 
     function loadCart() {
@@ -118,7 +204,6 @@
           badge.classList.add("hidden");
         }
       }
-      // also update cart icon in header if currently visible
       const headerCartBadge = document.getElementById("header-cart-count");
       if (headerCartBadge) {
         if (totalItems > 0) { headerCartBadge.innerText = totalItems; headerCartBadge.classList.remove("hidden"); }
@@ -133,7 +218,17 @@
         if (prod) cart.push({ id: prod.id, name: prod.name, price: prod.price, quantity, image: prod.image });
       }
       saveCart();
-      showToast("Added to cart ✓");
+      showToast("✨ Added to cart", "success");
+      animateAddButton(productId);
+    }
+    function animateAddButton(id) {
+      const btn = document.querySelector(`.add-cart-btn[data-id='${id}']`);
+      if (btn) {
+        btn.classList.add("ripple-effect");
+        btn.style.transform = "scale(0.9)";
+        setTimeout(() => { btn.style.transform = ""; }, 150);
+        setTimeout(() => { btn.classList.remove("ripple-effect"); }, 400);
+      }
     }
     function updateCartItem(id, delta) {
       const idx = cart.findIndex(i => i.id === id);
@@ -152,25 +247,25 @@
     }
     function clearCart() { cart = []; saveCart(); renderCurrentView(); }
     
-    // Toast (simple)
-    function showToast(msg) {
+    function showToast(msg, type = "default") {
       let toast = document.getElementById("dynamic-toast");
       if (!toast) {
         toast = document.createElement("div");
         toast.id = "dynamic-toast";
-        toast.className = "fixed bottom-24 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-5 py-2.5 rounded-full text-sm shadow-lg z-50 transition-all duration-300 opacity-0 pointer-events-none";
+        toast.className = "fixed bottom-24 left-1/2 -translate-x-1/2 bg-gray-900 text-white px-5 py-2.5 rounded-full text-sm shadow-lg z-50 transition-all duration-300 opacity-0 pointer-events-none flex items-center gap-2";
         document.body.appendChild(toast);
       }
-      toast.innerText = msg;
+      toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'coffee'} text-amber-300"></i> ${msg}`;
       toast.style.opacity = "1";
-      setTimeout(() => { toast.style.opacity = "0"; }, 1800);
+      setTimeout(() => { toast.style.opacity = "0"; }, 2000);
     }
 
-    // ---------- STATE & ROUTING ----------
-    let currentView = "home";     // home, cart, orders, profile
+    // Routing state
+    let currentView = "home";
     let selectedCategory = "All";
-    let lastOrder = null;         // store last order summary for orders page
-    let orderHistory = [];        // store multiple orders (for demo)
+    let orderHistory = [];
+    let currentSliderIndex = 0;
+    let autoSliderInterval = null;
     
     function renderCurrentView() {
       const container = document.getElementById("main-view");
@@ -180,7 +275,7 @@
       else if (currentView === "orders") renderOrders(container);
       else if (currentView === "profile") renderProfile(container);
       updateNavActive();
-      updateCartBadge(); // sync badge
+      updateCartBadge();
     }
     
     function updateNavActive() {
@@ -198,7 +293,35 @@
       });
     }
     
-    // ---------- HOME (categories + product grid) ----------
+    // Best Seller Slider Component with auto-slide
+    function initBestSellerSlider() {
+      const slider = document.querySelector('.slider-container');
+      if (!slider) return;
+      
+      // Clear any existing interval
+      if (autoSliderInterval) clearInterval(autoSliderInterval);
+      
+      // Auto slide every 4 seconds
+      autoSliderInterval = setInterval(() => {
+        const nextBtn = document.querySelector('.slider-next');
+        if (nextBtn && document.querySelector('.slider-container')) {
+          nextBtn.click();
+        }
+      }, 4000);
+    }
+    
+    function slideBestSeller(direction) {
+      const slider = document.querySelector('.slider-container');
+      if (!slider) return;
+      const scrollAmount = slider.clientWidth;
+      if (direction === 'next') {
+        slider.scrollBy({ left: scrollAmount, behavior: 'smooth' });
+      } else {
+        slider.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
+      }
+    }
+    
+    // Home with Best Seller Slider Section
     function renderHome(container) {
       const categoriesList = ["All", "Coffee", "Tea", "Cold Drinks", "Snacks", "Dessert"];
       const filtered = selectedCategory === "All" ? PRODUCTS : PRODUCTS.filter(p => p.category === selectedCategory);
@@ -207,27 +330,89 @@
         <div class="sticky top-0 z-20 bg-[#fefaf5]/95 backdrop-blur-sm pt-5 pb-2 px-4 border-b border-amber-100 sticky-shadow">
           <div class="flex justify-between items-center">
             <div><h1 class="text-2xl font-extrabold tracking-tight text-amber-800">☕ BrewHaven</h1><p class="text-xs text-stone-500 -mt-1">artisan coffee & bites</p></div>
-            <div class="relative"><i class="fas fa-shopping-bag text-2xl text-amber-700"></i><span id="header-cart-count" class="absolute -top-2 -right-2 bg-amber-600 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center hidden">0</span></div>
+            <div class="relative cursor-pointer" id="header-cart"><i class="fas fa-shopping-bag text-2xl text-amber-700"></i><span id="header-cart-count" class="absolute -top-2 -right-2 bg-amber-600 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center hidden">0</span></div>
           </div>
           <div class="relative mt-3"><i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-stone-400 text-sm"></i><input type="text" id="search-input" placeholder="Search coffee, cake..." class="w-full bg-white/80 border border-amber-200 rounded-2xl py-2.5 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-amber-300"></div>
         </div>
+        
+        <!-- BEST SELLER SLIDER SECTION -->
+        <div class="px-4 mt-4">
+          <div class="flex justify-between items-center mb-3">
+            <h2 class="text-lg font-bold text-stone-800 flex items-center gap-2"><i class="fas fa-fire text-amber-500"></i> Best Sellers</h2>
+            <div class="flex gap-2">
+              <button class="slider-prev w-8 h-8 rounded-full bg-white shadow-md flex items-center justify-center text-amber-600 slider-btn"><i class="fas fa-chevron-left text-sm"></i></button>
+              <button class="slider-next w-8 h-8 rounded-full bg-white shadow-md flex items-center justify-center text-amber-600 slider-btn"><i class="fas fa-chevron-right text-sm"></i></button>
+            </div>
+          </div>
+          <div class="slider-container overflow-x-auto scrollbar-hide flex gap-3 pb-2">
+            ${BEST_SELLERS.map(prod => `
+              <div class="slider-item flex-shrink-0 w-40 bg-white rounded-xl overflow-hidden shadow-sm border border-amber-100 product-card">
+                <div class="product-img-container h-32 w-full">
+                  <img src="${prod.image}" class="w-full h-full object-contain p-2" alt="${prod.name}" loading="lazy">
+                </div>
+                <div class="p-2">
+                  <span class="text-[9px] font-semibold uppercase text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">${prod.category}</span>
+                  <h3 class="font-bold text-stone-800 text-sm truncate">${prod.name}</h3>
+                  <div class="flex justify-between items-center mt-2">
+                    <span class="text-amber-800 font-bold text-sm">$${prod.price.toFixed(2)}</span>
+                    <button data-id="${prod.id}" class="add-cart-btn bg-amber-600 hover:bg-amber-700 text-white rounded-full w-7 h-7 flex items-center justify-center shadow-sm transition btn-touch"><i class="fas fa-plus text-xs"></i></button>
+                  </div>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+        
+        <!-- CATEGORIES -->
         <div class="px-4 pt-3 pb-2 overflow-x-auto scrollbar-hide">
           <div class="flex gap-2 whitespace-nowrap">${categoriesList.map(cat => `<button data-cat="${cat}" class="cat-btn px-4 py-1.5 rounded-full text-sm font-medium transition-all ${selectedCategory === cat ? 'bg-amber-700 text-white shadow-md' : 'bg-white border border-amber-200 text-stone-700'}">${cat}</button>`).join('')}</div>
         </div>
+        
+        <!-- ALL MENU TITLE -->
+        <div class="px-4 mt-2 mb-2">
+          <h2 class="text-md font-semibold text-stone-700">📋 All Menu</h2>
+        </div>
+        
+        <!-- PRODUCT GRID -->
         <div class="px-4 pb-4">
           <div class="grid grid-cols-2 gap-4" id="product-grid"></div>
         </div>
       `;
       
-      // product grid render
+      // Initialize slider functionality
+      const sliderContainer = container.querySelector('.slider-container');
+      const prevBtn = container.querySelector('.slider-prev');
+      const nextBtn = container.querySelector('.slider-next');
+      
+      if (prevBtn) prevBtn.addEventListener('click', () => { if(sliderContainer) sliderContainer.scrollBy({ left: -sliderContainer.clientWidth, behavior: 'smooth' }); });
+      if (nextBtn) nextBtn.addEventListener('click', () => { if(sliderContainer) sliderContainer.scrollBy({ left: sliderContainer.clientWidth, behavior: 'smooth' }); });
+      
+      // Auto slider
+      if (autoSliderInterval) clearInterval(autoSliderInterval);
+      autoSliderInterval = setInterval(() => {
+        if (sliderContainer && document.body.contains(sliderContainer)) {
+          const maxScroll = sliderContainer.scrollWidth - sliderContainer.clientWidth;
+          if (sliderContainer.scrollLeft + sliderContainer.clientWidth >= maxScroll - 10) {
+            sliderContainer.scrollTo({ left: 0, behavior: 'smooth' });
+          } else {
+            sliderContainer.scrollBy({ left: sliderContainer.clientWidth, behavior: 'smooth' });
+          }
+        }
+      }, 4500);
+      
+      // Grid rendering
       const grid = container.querySelector("#product-grid");
       function renderGrid(searchTerm = "") {
         let data = filtered;
         if (searchTerm) data = data.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
-        if (data.length === 0) { grid.innerHTML = `<div class="col-span-2 text-center py-12 text-stone-400">No items found 🍵</div>`; return; }
+        if (data.length === 0) { grid.innerHTML = `<div class="col-span-2 text-center py-12 text-stone-400"><i class="fas fa-mug-hot text-3xl mb-2 opacity-40"></i><p>No items found 🍵</p></div>`; return; }
+        
         grid.innerHTML = data.map(prod => `
-          <div class="product-card bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-all border border-amber-50">
-            <img src="${prod.image}" class="h-32 w-full object-cover" alt="${prod.name}">
+          <div class="product-card bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all border border-amber-50 ${prod.bestSeller ? 'best-seller-glow' : ''} relative">
+            ${prod.bestSeller ? `<div class="absolute top-2 left-2 z-10 bg-amber-600 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 best-seller-badge"><i class="fas fa-star text-[8px]"></i> BEST</div>` : ''}
+            <div class="product-img-container h-36 w-full">
+              <img src="${prod.image}" class="w-full h-full object-contain p-2" alt="${prod.name}" loading="lazy">
+            </div>
             <div class="p-3">
               <span class="text-[10px] font-semibold uppercase tracking-wide text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full inline-block">${prod.category}</span>
               <h3 class="font-bold text-stone-800 text-sm mt-1 truncate">${prod.name}</h3>
@@ -238,6 +423,7 @@
             </div>
           </div>
         `).join('');
+        
         grid.querySelectorAll(".add-cart-btn").forEach(btn => {
           btn.addEventListener("click", (e) => { e.stopPropagation(); addToCart(parseInt(btn.dataset.id)); });
         });
@@ -248,11 +434,16 @@
       container.querySelectorAll(".cat-btn").forEach(btn => {
         btn.addEventListener("click", () => { selectedCategory = btn.dataset.cat; renderCurrentView(); });
       });
+      
+      const headerCart = container.querySelector("#header-cart");
+      if (headerCart) headerCart.addEventListener("click", () => { currentView = "cart"; renderCurrentView(); });
+      
       updateCartBadge();
     }
     
-    // ---------- CART PAGE ----------
+    // Cart Page
     function renderCart(container) {
+      if (autoSliderInterval) clearInterval(autoSliderInterval);
       const subtotal = cart.reduce((sum, i) => sum + (i.price * i.quantity), 0);
       const total = subtotal;
       container.innerHTML = `
@@ -261,19 +452,19 @@
         <div class="px-4 pb-4 mt-2 border-t border-amber-100 pt-4">
           <div class="flex justify-between text-stone-700"><span>Subtotal</span><span>$${subtotal.toFixed(2)}</span></div>
           <div class="flex justify-between font-bold text-stone-900 text-lg mt-2"><span>Total</span><span>$${total.toFixed(2)}</span></div>
-          <button id="checkout-action-btn" class="w-full mt-5 bg-amber-700 text-white py-3 rounded-xl font-bold shadow-md btn-touch">Checkout →</button>
+          <button id="checkout-action-btn" class="w-full mt-5 bg-amber-700 text-white py-3 rounded-xl font-bold shadow-md btn-touch transition hover:bg-amber-800">Checkout →</button>
           ${cart.length ? `<button id="clear-cart-btn" class="w-full mt-3 text-stone-400 text-sm underline">Clear cart</button>` : ''}
         </div>
       `;
       const itemsContainer = container.querySelector("#cart-items-list");
-      if (cart.length === 0) itemsContainer.innerHTML = `<div class="text-center py-12 text-stone-400"><i class="fas fa-shopping-bag text-4xl mb-3 opacity-40"></i><p>Your cart is empty</p></div>`;
+      if (cart.length === 0) itemsContainer.innerHTML = `<div class="text-center py-12 text-stone-400"><i class="fas fa-shopping-bag text-4xl mb-3 opacity-40"></i><p>Your cart is empty</p><button id="explore-menu" class="mt-3 text-amber-600 underline">Explore menu</button></div>`;
       else {
         itemsContainer.innerHTML = cart.map(item => `
           <div class="flex gap-3 bg-white p-3 rounded-xl shadow-sm items-center">
-            <img src="${item.image}" class="w-14 h-14 rounded-lg object-cover">
+            <div class="w-14 h-14 rounded-lg overflow-hidden bg-amber-50 flex items-center justify-center"><img src="${item.image}" class="w-full h-full object-contain"></div>
             <div class="flex-1"><h3 class="font-semibold">${item.name}</h3><p class="text-amber-700 text-sm">$${item.price.toFixed(2)}</p></div>
-            <div class="flex items-center gap-2"><button data-id="${item.id}" data-delta="-1" class="qty-btn bg-gray-100 w-7 h-7 rounded-full">-</button><span class="w-6 text-center">${item.quantity}</span><button data-id="${item.id}" data-delta="1" class="qty-btn bg-gray-100 w-7 h-7 rounded-full">+</button></div>
-            <button data-id="${item.id}" class="remove-item text-stone-400 hover:text-red-500"><i class="fas fa-trash-alt"></i></button>
+            <div class="flex items-center gap-2"><button data-id="${item.id}" data-delta="-1" class="qty-btn bg-gray-100 w-7 h-7 rounded-full hover:bg-gray-200 transition">-</button><span class="w-6 text-center font-medium">${item.quantity}</span><button data-id="${item.id}" data-delta="1" class="qty-btn bg-gray-100 w-7 h-7 rounded-full hover:bg-gray-200 transition">+</button></div>
+            <button data-id="${item.id}" class="remove-item text-stone-400 hover:text-red-500 transition"><i class="fas fa-trash-alt"></i></button>
           </div>
         `).join('');
         itemsContainer.querySelectorAll(".qty-btn").forEach(btn => { btn.addEventListener("click", (e) => { e.stopPropagation(); const id = parseInt(btn.dataset.id); const delta = parseInt(btn.dataset.delta); updateCartItem(id, delta); }); });
@@ -282,23 +473,25 @@
       const backBtn = container.querySelector("#back-home");
       if (backBtn) backBtn.addEventListener("click", () => { currentView = "home"; renderCurrentView(); });
       const checkoutBtn = container.querySelector("#checkout-action-btn");
-      if (checkoutBtn) checkoutBtn.addEventListener("click", () => { if (cart.length) showCheckoutModal(); else showToast("Cart is empty"); });
+      if (checkoutBtn) checkoutBtn.addEventListener("click", () => { if (cart.length) showCheckoutModal(); else showToast("Cart is empty", "default"); });
       const clearBtn = container.querySelector("#clear-cart-btn");
       if (clearBtn) clearBtn.addEventListener("click", () => { clearCart(); renderCurrentView(); });
+      const exploreBtn = container.querySelector("#explore-menu");
+      if (exploreBtn) exploreBtn.addEventListener("click", () => { currentView = "home"; renderCurrentView(); });
     }
     
-    // CHECKOUT MODAL (order type + payment + order success)
+    // Checkout Modal
     function showCheckoutModal() {
       const modalDiv = document.createElement("div");
       modalDiv.className = "fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4";
       modalDiv.innerHTML = `
         <div class="bg-white max-w-md w-full rounded-2xl overflow-hidden shadow-2xl max-h-[90vh] overflow-y-auto">
-          <div class="p-5 border-b border-amber-100"><h3 class="text-xl font-bold">Order Summary</h3></div>
+          <div class="p-5 border-b border-amber-100 bg-amber-50/30"><h3 class="text-xl font-bold flex items-center gap-2"><i class="fas fa-clipboard-list text-amber-700"></i>Order Summary</h3></div>
           <div class="p-4 space-y-4">
-            <div class="bg-amber-50 p-3 rounded-xl"><p class="font-semibold">${cart.reduce((sum,i)=>sum+i.quantity,0)} items</p>${cart.map(i=>`<div class="flex justify-between text-sm"><span>${i.name} x${i.quantity}</span><span>$${(i.price*i.quantity).toFixed(2)}</span></div>`).join('')}<div class="border-t mt-2 pt-2 font-bold flex justify-between"><span>Total</span><span>$${cart.reduce((s,i)=>s+i.price*i.quantity,0).toFixed(2)}</span></div></div>
-            <div><label class="text-sm font-medium">Order Type</label><div class="flex gap-4 mt-1"><label class="flex items-center gap-2"><input type="radio" name="orderType" value="Dine in" checked> Dine in</label><label class="flex items-center gap-2"><input type="radio" name="orderType" value="Takeaway"> Takeaway</label></div></div>
-            <div><label class="text-sm font-medium">Payment</label><div class="flex flex-wrap gap-3 mt-1"><label class="flex items-center gap-2"><input type="radio" name="payment" value="Cash" checked> Cash</label><label><input type="radio" name="payment" value="Card"> Card</label><label><input type="radio" name="payment" value="QR"> QR</label></div></div>
-            <button id="confirm-order-btn" class="w-full bg-amber-700 text-white py-3 rounded-xl font-bold">Place Order</button>
+            <div class="bg-amber-50 p-3 rounded-xl"><p class="font-semibold text-amber-800">${cart.reduce((sum,i)=>sum+i.quantity,0)} items</p>${cart.map(i=>`<div class="flex justify-between text-sm mt-1"><span>${i.name} x${i.quantity}</span><span>$${(i.price*i.quantity).toFixed(2)}</span></div>`).join('')}<div class="border-t mt-2 pt-2 font-bold flex justify-between"><span>Total</span><span class="text-amber-800">$${cart.reduce((s,i)=>s+i.price*i.quantity,0).toFixed(2)}</span></div></div>
+            <div><label class="text-sm font-semibold text-stone-700">Order Type</label><div class="flex gap-4 mt-1"><label class="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-full"><input type="radio" name="orderType" value="Dine in" checked> Dine in</label><label class="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-full"><input type="radio" name="orderType" value="Takeaway"> Takeaway</label></div></div>
+            <div><label class="text-sm font-semibold text-stone-700">Payment Method</label><div class="flex flex-wrap gap-3 mt-1"><label class="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-full"><input type="radio" name="payment" value="Cash" checked> Cash</label><label class="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-full"><input type="radio" name="payment" value="Card"> Card</label><label class="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-full"><input type="radio" name="payment" value="QR"> QR</label></div></div>
+            <button id="confirm-order-btn" class="w-full bg-amber-700 text-white py-3 rounded-xl font-bold shadow-md hover:bg-amber-800 transition btn-touch">Place Order ✓</button>
           </div>
         </div>
       `;
@@ -312,43 +505,44 @@
         const orderObj = { id: orderNumber, total: totalPrice, items: [...cart], orderType, payment, timestamp: new Date().toLocaleString() };
         orderHistory.unshift(orderObj);
         localStorage.setItem("brew_orders", JSON.stringify(orderHistory));
-        lastOrder = orderObj;
-        clearCart();  // empty cart
+        clearCart();
         modalDiv.remove();
         currentView = "orders";
         renderCurrentView();
-        showToast(`Order placed! ${orderNumber}`);
+        showToast(`Order placed! ${orderNumber}`, "success");
       });
       modalDiv.addEventListener("click", (e) => { if(e.target === modalDiv) modalDiv.remove(); });
     }
     
-    // ---------- ORDERS PAGE (success + history) ----------
+    // Orders Page
     function renderOrders(container) {
+      if (autoSliderInterval) clearInterval(autoSliderInterval);
       const storedOrders = localStorage.getItem("brew_orders");
       if (storedOrders) orderHistory = JSON.parse(storedOrders);
       const latestOrder = orderHistory[0];
       container.innerHTML = `
-        <div class="sticky top-0 bg-[#fefaf5] px-4 pt-5 pb-3 border-b border-amber-100"><h2 class="text-xl font-bold">Your Orders</h2></div>
+        <div class="sticky top-0 bg-[#fefaf5] px-4 pt-5 pb-3 border-b border-amber-100"><h2 class="text-xl font-bold flex items-center gap-2"><i class="fas fa-receipt text-amber-700"></i>Your Orders</h2></div>
         <div class="p-4 space-y-4">
-          ${latestOrder ? `<div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-4"><div class="flex justify-between items-start"><div><i class="fas fa-check-circle text-emerald-600 text-xl"></i><h3 class="font-bold text-lg mt-1">Order Confirmed</h3><p class="text-sm text-stone-600">${latestOrder.id}</p><p class="text-xs">${latestOrder.timestamp}</p><p class="font-semibold mt-2">Total: $${latestOrder.total.toFixed(2)}</p><p class="text-xs capitalize">${latestOrder.orderType} · ${latestOrder.payment}</p></div><div class="bg-white rounded-full w-12 h-12 flex items-center justify-center shadow-sm"><i class="fas fa-mug-hot text-amber-600 text-xl"></i></div></div><div class="mt-3 text-sm">✨ ${latestOrder.items.length} items — enjoy your coffee!</div></div>` : `<div class="text-center py-12 text-stone-400"><i class="fas fa-receipt text-5xl mb-3 opacity-30"></i><p>No orders yet</p><button id="order-shop-btn" class="mt-4 bg-amber-600 text-white px-5 py-2 rounded-full text-sm">Order Now</button></div>`}
-          ${orderHistory.slice(1).length ? `<div><h3 class="font-semibold mt-3">Past orders</h3>${orderHistory.slice(1).map(o => `<div class="bg-white p-3 rounded-xl shadow-sm mt-2"><div class="flex justify-between"><span class="font-mono text-xs">${o.id}</span><span>$${o.total.toFixed(2)}</span></div><div class="text-xs text-stone-500">${o.timestamp}</div></div>`).join('')}</div>` : ''}
+          ${latestOrder ? `<div class="bg-gradient-to-br from-emerald-50 to-green-50 border border-emerald-200 rounded-2xl p-5 shadow-md"><div class="flex justify-between items-start"><div><i class="fas fa-check-circle text-emerald-600 text-2xl"></i><h3 class="font-bold text-lg mt-1">Order Confirmed!</h3><p class="text-sm font-mono text-stone-700">${latestOrder.id}</p><p class="text-xs text-stone-500 mt-1">${latestOrder.timestamp}</p><p class="font-bold mt-3 text-amber-800">Total: $${latestOrder.total.toFixed(2)}</p><p class="text-xs capitalize mt-1">${latestOrder.orderType} · ${latestOrder.payment}</p></div><div class="bg-white rounded-full w-12 h-12 flex items-center justify-center shadow-sm"><i class="fas fa-mug-hot text-amber-600 text-xl"></i></div></div><div class="mt-3 text-sm text-stone-600 border-t border-emerald-200 pt-3">✨ ${latestOrder.items.length} items — enjoy your coffee experience!</div></div>` : `<div class="text-center py-12 text-stone-400"><i class="fas fa-receipt text-5xl mb-3 opacity-30"></i><p>No orders yet</p><button id="order-shop-btn" class="mt-4 bg-amber-600 text-white px-5 py-2 rounded-full text-sm shadow-md">Order Now</button></div>`}
+          ${orderHistory.slice(1).length ? `<div><h3 class="font-semibold mt-3 text-stone-700">📜 Past orders</h3>${orderHistory.slice(1).map(o => `<div class="bg-white p-3 rounded-xl shadow-sm mt-2 border"><div class="flex justify-between"><span class="font-mono text-xs">${o.id}</span><span class="font-semibold">$${o.total.toFixed(2)}</span></div><div class="text-xs text-stone-500">${o.timestamp}</div></div>`).join('')}</div>` : ''}
         </div>
       `;
       const shopBtn = container.querySelector("#order-shop-btn");
       if (shopBtn) shopBtn.addEventListener("click", () => { currentView = "home"; renderCurrentView(); });
     }
     
-    // ---------- PROFILE PAGE (simple) ----------
+    // Profile Page
     function renderProfile(container) {
+      if (autoSliderInterval) clearInterval(autoSliderInterval);
       container.innerHTML = `
-        <div class="px-4 pt-6 pb-4 bg-amber-50/40 border-b border-amber-100"><div class="flex items-center gap-4"><div class="w-16 h-16 rounded-full bg-amber-200 flex items-center justify-center text-2xl">☕</div><div><h2 class="font-bold text-xl">Coffee Lover</h2><p class="text-sm text-stone-500">Member since 2025</p></div></div></div>
-        <div class="p-5 space-y-5"><div class="bg-white rounded-xl p-4 shadow-sm flex justify-between"><span><i class="fas fa-gift text-amber-600"></i> Rewards points</span><span class="font-bold">1,280 pts</span></div><div class="bg-white rounded-xl p-4 shadow-sm"><i class="fas fa-store"></i> Favorite store: BrewHaven Downtown</div><button id="clear-history" class="w-full mt-4 text-stone-400 text-sm border border-stone-200 py-2 rounded-full">Clear order history</button><p class="text-center text-xs text-stone-400 pt-4">v2.0 · Artisan coffee</p></div>
+        <div class="px-4 pt-6 pb-4 bg-gradient-to-r from-amber-50 to-amber-100/40 border-b border-amber-100"><div class="flex items-center gap-4"><div class="w-16 h-16 rounded-full bg-amber-200 flex items-center justify-center text-3xl shadow-inner">☕</div><div><h2 class="font-bold text-xl text-stone-800">Coffee Enthusiast</h2><p class="text-sm text-stone-500">Member since 2025</p></div></div></div>
+        <div class="p-5 space-y-5"><div class="bg-white rounded-xl p-4 shadow-sm flex justify-between items-center"><span><i class="fas fa-gift text-amber-600 mr-2"></i> Rewards points</span><span class="font-bold text-amber-700">1,280 pts</span></div><div class="bg-white rounded-xl p-4 shadow-sm flex items-center gap-2"><i class="fas fa-store text-amber-600"></i> Favorite store: BrewHaven Downtown</div><div class="bg-white rounded-xl p-4 shadow-sm flex items-center gap-2"><i class="fas fa-mug-hot text-amber-600"></i> Favorite drink: Cappuccino</div><button id="clear-history" class="w-full mt-2 text-stone-400 text-sm border border-stone-200 py-2 rounded-full hover:bg-stone-50 transition">Clear order history</button><p class="text-center text-xs text-stone-400 pt-4">☕ BrewHaven v2.0 · Crafted with love</p></div>
       `;
       const clearHistoryBtn = container.querySelector("#clear-history");
-      if (clearHistoryBtn) clearHistoryBtn.addEventListener("click", () => { localStorage.removeItem("brew_orders"); orderHistory = []; renderCurrentView(); showToast("History cleared"); });
+      if (clearHistoryBtn) clearHistoryBtn.addEventListener("click", () => { localStorage.removeItem("brew_orders"); orderHistory = []; renderCurrentView(); showToast("History cleared", "default"); });
     }
     
-    // ---- initialize & navigation ----
+    // Initialize
     function init() {
       loadCart();
       const storedOrders = localStorage.getItem("brew_orders");
